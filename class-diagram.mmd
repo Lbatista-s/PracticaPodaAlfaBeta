@@ -1,0 +1,122 @@
+classDiagram
+  class abTreePractice {
+    +module
+    +dependsOn: d3, Enums, Tree
+  }
+
+  class MainCtrl {
+    +useAb
+    +tree: Tree
+    +actionLQ: ActionListQueue
+    +generateRootNode()
+    +toggleABVisual()
+    +stepForward()/stepBackward()
+    +checkAnswer()/showSolution()/resetTree()
+  }
+
+  class abTreeDirective {
+    +scope: tree, reRender, useAb
+    +renderD3Tree()
+    +reRender()
+    +svgMouseDown()
+    +windowKeyDown()
+  }
+
+  class d3Service {
+    +d3() Promise
+    +loads D3 script lazily
+  }
+
+  class EnumService {
+    +TreeNodeTypeEnum
+    +opposite(type)
+  }
+
+  class ActionLQService {
+    +Action
+    +ActionListQueue
+  }
+
+  class Action {
+    +object
+    +key
+    +oldVal
+    +newVal
+    +apply()
+    +reverse()
+  }
+
+  class ActionListQueue {
+    +inAction
+    +lastAction
+    +actionListQueue
+    +pushActionList()
+    +extendActionList()
+    +stepForward()
+    +stepBackward()
+    +goToBeginning()/goToEnd()
+    +play()/pause()
+  }
+
+  class TreeService {
+    +Tree
+    +TreeNode
+    +TreeEdge
+  }
+
+  class Tree {
+    +rootNode: TreeNode
+    +treeType
+    +depth
+    +branchingFactor
+    +mutable
+    +generateABTreeRootNode()
+    +alphaBeta() ActionListQueue
+    +checkAnswer()
+    +reset()
+    +setSolution()
+  }
+
+  class TreeNode {
+    +nodeType
+    +parentNode
+    +edgeToParent: TreeEdge
+    +children: TreeNode[]
+    +value, alpha, beta
+    +entered, pruned
+    +setKthChild()
+    +getKthChild()
+    +setParent()
+  }
+
+  class TreeEdge {
+    +source: TreeNode
+    +target: TreeNode
+    +entered
+    +pruned
+  }
+
+  abTreePractice --> MainCtrl : defines
+  abTreePractice --> abTreeDirective : defines
+  MainCtrl --> EnumService : injects
+  MainCtrl --> TreeService : injects
+  MainCtrl --> Tree : creates/uses
+  MainCtrl --> ActionListQueue : controls
+
+  abTreeDirective --> d3Service : injects
+  abTreeDirective --> EnumService : injects
+  abTreeDirective --> Tree : reads/mutates
+
+  ActionLQService --> Action : factory
+  ActionLQService --> ActionListQueue : factory
+
+  TreeService --> EnumService : injects
+  TreeService --> ActionLQService : injects
+  TreeService --> Tree : factory
+  TreeService --> TreeNode : factory
+  TreeService --> TreeEdge : factory
+
+  Tree --> TreeNode : owns root/children
+  TreeNode --> TreeEdge : edgeToParent
+  Tree --> ActionListQueue : alphaBeta returns
+  ActionListQueue --> Action : applies/reverses
