@@ -111,6 +111,17 @@
               </div>
             </div>
           </div>
+          <div class="row">
+            <div class="col-sm-6 button-label-container text-right">
+              <label class="button-label">Top Node Value</label>
+            </div>
+            <div class="col-sm-6">
+              <div class="btn-group">
+                <button ng-click="setRootSeedEnabled(false)" type="button" class="btn btn-default {{!includeRootSeed ? 'active' : ''}}">Off</button>
+                <button ng-click="setRootSeedEnabled(true)" type="button" class="btn btn-default {{includeRootSeed ? 'active' : ''}}">On</button>
+              </div>
+            </div>
+          </div>
           <hr/>
           <div class="row">
             <div class="col-sm-6 text-right">
@@ -138,6 +149,9 @@
                 </label>
             </div>
           </div>
+        </div>
+        <div class="row text-center">
+          <small>Node editing: V=value, A=alpha, B=beta, I=+∞, Shift+I=-∞</small>
         </div>
       </div>
     </div>

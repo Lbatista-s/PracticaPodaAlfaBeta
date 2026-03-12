@@ -182,6 +182,12 @@ text.value {
   font-weight: bold;
 }
 
+text.prunemsg {
+  text-anchor: middle;
+  font-size: 11px;
+  fill: #666;
+}
+
 g.node.pruned .alpha,
 g.node.pruned .beta {
   fill: #AA0000;

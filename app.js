@@ -160,7 +160,7 @@ angular.module('Tree', ['Enums', 'ActionListQueue'])
       this.branchingFactor = branchingFactor;
       this.mutable = true;
     }
-    Tree.generateABTreeRootNode = function(treeType, maxDepth, branchingFactor, minVal, maxVal) {
+    Tree.generateABTreeRootNode = function(treeType, maxDepth, branchingFactor, minVal, maxVal, rootSeedVal) {
       function generateSubTree(parentNode, nodeType, depth, bFac) {
         var curNode = new TreeNode(nodeType, parentNode, depth, bFac);
         if (depth == maxDepth) {
@@ -180,7 +180,12 @@ angular.module('Tree', ['Enums', 'ActionListQueue'])
         }
         return curNode;
       }
-      return generateSubTree(null, treeType, 1, branchingFactor);
+      var root = generateSubTree(null, treeType, 1, branchingFactor);
+      if (rootSeedVal != null) {
+        root.fixedValue = rootSeedVal;
+        root.value = rootSeedVal;
+      }
+      return root;
     }
     Tree.prototype.alphaBeta = function() {
       var thisTree = this;
@@ -203,7 +208,7 @@ angular.module('Tree', ['Enums', 'ActionListQueue'])
         return actions;
       }
 
-      var abActions = function(node, bFac, a, b, maxNode, actionLQ) {
+      var abActions = function(node, bFac, a, b, maxNode, actionLQ, rootSeedVal) {
         var enterActions = [
           new Action(node.edgeToParent, 'entered', false, true),
           new Action(node, 'entered', false, true),
@@ -229,7 +234,9 @@ angular.module('Tree', ['Enums', 'ActionListQueue'])
         var k = 0,
             pruneRest = false,
             lastChildExitActions = [],
-            curVal = maxNode ? Number.NEGATIVE_INFINITY : Number.POSITIVE_INFINITY,
+            curVal = (node.depth == 1 && rootSeedVal != null)
+              ? rootSeedVal
+              : (maxNode ? Number.NEGATIVE_INFINITY : Number.POSITIVE_INFINITY),
             child,
             childVal,
             setValActions,
@@ -244,7 +251,7 @@ angular.module('Tree', ['Enums', 'ActionListQueue'])
               );
               node.__pruned = true;
             } else {
-              res = abActions(child, bFac, a, b, !maxNode, actionLQ);
+              res = abActions(child, bFac, a, b, !maxNode, actionLQ, rootSeedVal);
               setValActions = [];
               if (res.returnVal > curVal) {
                 curVal = res.returnVal;
@@ -282,7 +289,7 @@ angular.module('Tree', ['Enums', 'ActionListQueue'])
               );
               node.__pruned = true;
             } else {
-              res = abActions(child, bFac, a, b, !maxNode, actionLQ);
+              res = abActions(child, bFac, a, b, !maxNode, actionLQ, rootSeedVal);
               setValActions = [];
               if (res.returnVal < curVal) {
                 curVal = res.returnVal;
@@ -325,22 +332,39 @@ angular.module('Tree', ['Enums', 'ActionListQueue'])
         };
       }
       var actionLQ = new ActionListQueue();
+      var maxRoot = (this.treeType == TreeNodeTypeEnum.maxNode);
+      var rootSeedVal = this.rootNode.fixedValue;
+      var initAlpha = Number.NEGATIVE_INFINITY;
+      var initBeta = Number.POSITIVE_INFINITY;
+      if (rootSeedVal != null) {
+        if (maxRoot) {
+          initAlpha = rootSeedVal;
+        } else {
+          initBeta = rootSeedVal;
+        }
+      }
       var res = abActions(
         this.rootNode,
         this.branchingFactor,
-        Number.NEGATIVE_INFINITY,
-        Number.POSITIVE_INFINITY,
-        (this.treeType == TreeNodeTypeEnum.maxNode)
+        initAlpha,
+        initBeta,
+        maxRoot,
+        actionLQ,
+        rootSeedVal
       );
       actionLQ.pushActionList(res.enterActions);
       actionLQ.extendActionList(res.childActionsList);
       actionLQ.pushActionList(res.exitActions);
       return actionLQ;
     }
-    Tree.prototype.checkAnswer = function() {
+    Tree.prototype.checkAnswer = function(checkAB) {
       function checkSubTree(node) {
         if (node.nodeType == TreeNodeTypeEnum.leafNode) { return true; }
         if (node.value != node.__value) {
+          return false;
+        }
+        if (checkAB &&
+            (node.alpha != node.__alpha || node.beta != node.__beta)) {
           return false;
         }
         if (node.edgeToParent &&
@@ -364,7 +388,7 @@ angular.module('Tree', ['Enums', 'ActionListQueue'])
         }
         node.entered = false;
         if (node.nodeType == TreeNodeTypeEnum.leafNode) { return; }
-        node.value = null;
+        node.value = (node.fixedValue != null) ? node.fixedValue : null;
         node.alpha = null;
         node.beta = null;
         for (var k = 0; k < node.childNum; k++) {
@@ -399,6 +423,7 @@ angular.module('Tree', ['Enums', 'ActionListQueue'])
       this.childNum = childNum;
       this.children = new Array(childNum);
       this.value = null;
+      this.fixedValue = null;
     }
     TreeNode.prototype.setKthChild = function(k, child) {
       if (k >= this.childNum) {
@@ -448,16 +473,27 @@ angular.module('abTreePractice', ['d3', 'Enums', 'Tree'])
       $scope.useAb = bool;
     }
     $scope.maxVal = 20;
+    $scope.includeRootSeed = false;
+    $scope.setRootSeedEnabled = function(bool) {
+      $scope.includeRootSeed = bool;
+      $scope.generateRootNode();
+    }
 
     $scope.generateRootNode = function(maxFirst) {
+      var rootSeedVal = null;
+      if ($scope.includeRootSeed) {
+        rootSeedVal = Math.round(Math.random() * ($scope.maxVal * 2)) - $scope.maxVal;
+      }
       $scope.tree.rootNode = Tree.generateABTreeRootNode(
         $scope.tree.treeType,
         $scope.tree.depth,
         $scope.tree.branchingFactor,
         -$scope.maxVal,
-        $scope.maxVal
+        $scope.maxVal,
+        rootSeedVal
       );
       $scope.actionLQ = null;
+      $scope.correct = null;
     };
     $scope.tree = new Tree(null, TreeNodeTypeEnum.maxNode, 4, 3);
     $scope.generateRootNode();
@@ -481,7 +517,7 @@ angular.module('abTreePractice', ['d3', 'Enums', 'Tree'])
       if (!$scope.actionLQ) {
         $scope.actionLQ = $scope.tree.alphaBeta();
       }
-      $scope.correct = $scope.tree.checkAnswer();
+      $scope.correct = $scope.tree.checkAnswer($scope.useAb);
     }
     $scope.correct = null;
 
@@ -664,7 +700,8 @@ angular.module('abTreePractice', ['d3', 'Enums', 'Tree'])
 
           // mouse event vars
           var selectedNode = null,
-              mousedownNode = null;
+              mousedownNode = null,
+              editField = 'value';
 
           // compute text width for cursor
           function computeTextWidth(text, font) {
@@ -763,6 +800,8 @@ angular.module('abTreePractice', ['d3', 'Enums', 'Tree'])
                 if (!scope.tree.mutable) { return; }
                 mousedownNode = d;
                 d.oldVal = d.value;
+                d.oldAlpha = d.alpha;
+                d.oldBeta = d.beta;
                 scope.reRender();
               });
             // show node IDs and alpha-beta
@@ -808,6 +847,14 @@ angular.module('abTreePractice', ['d3', 'Enums', 'Tree'])
               .attr('x', function(d) { return d.x })
               .attr('y', function(d) { return d.y + 6; })
               .text(function(d) { return (d.value != null) ? d.value : ''; });
+            vertex.select('text.prunemsg')
+              .attr('x', function(d) { return d.x })
+              .attr('y', function(d) { return d.y + 32; })
+              .text(function(d) {
+                if (selectedNode !== d) { return ''; }
+                if (d.nodeType == TreeNodeTypeEnum.leafNode) { return 'editing value'; }
+                return 'editing ' + editField;
+              });
             // update existing alpha-beta values
             vertex.select('text.alpha')
               .attr('x', function(d) { return d.x + 45 })
@@ -836,8 +883,15 @@ angular.module('abTreePractice', ['d3', 'Enums', 'Tree'])
             // update existing cursor
             vertex.select('rect.cursor')
               .attr('x', function(node) {
-                var nodeVal = node.value;
-                var valStr = (nodeVal == null) ? '' : nodeVal.toString();
+                var nodeVal;
+                if (selectedNode === node && editField == 'alpha') {
+                  nodeVal = node.alpha;
+                } else if (selectedNode === node && editField == 'beta') {
+                  nodeVal = node.beta;
+                } else {
+                  nodeVal = node.value;
+                }
+                var valStr = (nodeVal == null) ? '' : nodeVal.toString().replace('Infinity', '∞');
 
                 var valSVG = d3.select(this.parentNode).select('text').node();
                 var valSVGLength = valSVG ? valSVG.getComputedTextLength() : 0;
@@ -864,10 +918,50 @@ angular.module('abTreePractice', ['d3', 'Enums', 'Tree'])
           function decrValCharIndex() {
             valCharIndex = Math.max(0, valCharIndex - 1);
           }
+          function fieldToString(val) {
+            if (val == null) { return ''; }
+            return val.toString().replace('Infinity', '∞');
+          }
+          function parseEditableValue(str) {
+            if (str == null) { return null; }
+            str = str.toString().trim();
+            if (str == '') { return null; }
+            if (str == '∞' || str.toLowerCase() == 'inf' || str.toLowerCase() == 'infinity') {
+              return Number.POSITIVE_INFINITY;
+            }
+            if (str == '-∞' || str.toLowerCase() == '-inf' || str.toLowerCase() == '-infinity') {
+              return Number.NEGATIVE_INFINITY;
+            }
+            var newVal = parseFloat(str);
+            return isNaN(newVal) ? null : newVal;
+          }
+          function getEditFieldValue(node) {
+            if (editField == 'alpha') { return node.alpha; }
+            if (editField == 'beta') { return node.beta; }
+            return node.value;
+          }
+          function setEditFieldValue(node, val) {
+            if (editField == 'alpha') {
+              node.alpha = val;
+              return;
+            }
+            if (editField == 'beta') {
+              node.beta = val;
+              return;
+            }
+            node.value = val;
+          }
+          function setEditField(field) {
+            if (!selectedNode || selectedNode.nodeType == TreeNodeTypeEnum.leafNode) {
+              return;
+            }
+            setEditFieldValue(selectedNode, parseEditableValue(valStr));
+            editField = field;
+            valStr = fieldToString(getEditFieldValue(selectedNode));
+            valCharIndex = valStr.length;
+          }
           function parseAndSetNodeValue() {
-            var newVal = parseFloat(valStr);
-            newVal = (isNaN(newVal)) ? null : newVal;
-            selectedNode.value = newVal;
+            setEditFieldValue(selectedNode, parseEditableValue(valStr));
 
             valCharIndex = null;
             valStr = null;
@@ -877,6 +971,8 @@ angular.module('abTreePractice', ['d3', 'Enums', 'Tree'])
           }
           function discardNodeValueChanges() {
             selectedNode.value = selectedNode.oldVal;
+            selectedNode.alpha = selectedNode.oldAlpha;
+            selectedNode.beta = selectedNode.oldBeta;
             valCharIndex = null;
             valStr = null;
             selectedNode = null;
@@ -893,9 +989,10 @@ angular.module('abTreePractice', ['d3', 'Enums', 'Tree'])
               if (mousedownNode === selectedNode) { return; }
               selectedNode = mousedownNode;
               mousedownNode = null;
+              editField = 'value';
 
-              nodeValue = selectedNode.value
-              valStr = (nodeValue == null) ? '' : nodeValue.toString();
+              nodeValue = getEditFieldValue(selectedNode);
+              valStr = fieldToString(nodeValue);
               valCharIndex = valStr.length;
 
               cursorRect = selectedNode.nodeEle
@@ -929,9 +1026,25 @@ angular.module('abTreePractice', ['d3', 'Enums', 'Tree'])
 
             // Editing Edge Weights
             if (selectedNode) {
-              var nodeVal = selectedNode.value;
-              valStr = (nodeVal == null) ? '' : nodeVal.toString();
-              if ((lastKeyDown > 47 && lastKeyDown < 58) // number keys
+              var nodeVal = getEditFieldValue(selectedNode);
+              valStr = fieldToString(nodeVal);
+
+              if (lastKeyDown == 86) { // v
+                editField = 'value';
+                valStr = fieldToString(getEditFieldValue(selectedNode));
+                valCharIndex = valStr.length;
+              } else if (lastKeyDown == 65 && selectedNode.nodeType != TreeNodeTypeEnum.leafNode) { // a
+                setEditField('alpha');
+              } else if (lastKeyDown == 66 && selectedNode.nodeType != TreeNodeTypeEnum.leafNode) { // b
+                setEditField('beta');
+              } else if (lastKeyDown == 73) { // i
+                setEditFieldValue(
+                  selectedNode,
+                  d3.event.shiftKey ? Number.NEGATIVE_INFINITY : Number.POSITIVE_INFINITY
+                );
+                valStr = fieldToString(getEditFieldValue(selectedNode));
+                valCharIndex = valStr.length;
+              } else if ((lastKeyDown > 47 && lastKeyDown < 58) // number keys
                   || lastKeyDown == 189 // minus dash
                   || lastKeyDown == 190) { // decimal point
                 var leftSlice = valStr.slice(0, valCharIndex),
@@ -939,14 +1052,14 @@ angular.module('abTreePractice', ['d3', 'Enums', 'Tree'])
                     lastKeyDown = (lastKeyDown > 188) ? (lastKeyDown - 144) : lastKeyDown,
                     newNum = String.fromCharCode(lastKeyDown);
                 valStr = leftSlice + newNum + rightSlice;
-                selectedNode.value = valStr;
+                setEditFieldValue(selectedNode, valStr);
                 incrValCharIndex();
               } else if (lastKeyDown == 8) { // backspace
                 d3.event.preventDefault();
                 var leftSlice = valStr.slice(0, Math.max(0, valCharIndex - 1)),
                     rightSlice = valStr.slice(valCharIndex, valStr.length);
                 valStr = leftSlice + rightSlice;
-                selectedNode.value = valStr;
+                setEditFieldValue(selectedNode, valStr);
                 decrValCharIndex();
               } else if (lastKeyDown == 37) {  // left arrow
                 d3.event.preventDefault();
