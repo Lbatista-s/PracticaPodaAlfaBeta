@@ -168,7 +168,7 @@ g.node.entered.leaf path {
 }
 
 rect.cursor {
-  fill: #000;
+  fill: #00000000;
 }
 
 text {

@@ -325,11 +325,21 @@ angular.module('Tree', ['Enums', 'ActionListQueue'])
         };
       }
       var actionLQ = new ActionListQueue();
+      var startAlpha = Number.NEGATIVE_INFINITY;
+      var startBeta = Number.POSITIVE_INFINITY;
+      var rootVal = this.rootNode ? this.rootNode.value : null;
+      if (rootVal != null && !isNaN(rootVal)) {
+        if (this.treeType == TreeNodeTypeEnum.maxNode) {
+          startAlpha = rootVal;
+        } else if (this.treeType == TreeNodeTypeEnum.minNode) {
+          startBeta = rootVal;
+        }
+      }
       var res = abActions(
         this.rootNode,
         this.branchingFactor,
-        Number.NEGATIVE_INFINITY,
-        Number.POSITIVE_INFINITY,
+        startAlpha,
+        startBeta,
         (this.treeType == TreeNodeTypeEnum.maxNode)
       );
       actionLQ.pushActionList(res.enterActions);
@@ -366,6 +376,7 @@ angular.module('Tree', ['Enums', 'ActionListQueue'])
           node.edgeToParent.pruned = false;
         }
         node.entered = false;
+        node.pruned = false;
         if (node.nodeType == TreeNodeTypeEnum.leafNode) { return; }
         node.value = null;
         node.alpha = null;
@@ -451,15 +462,22 @@ angular.module('abTreePractice', ['d3', 'Enums', 'Tree'])
       $scope.useAb = bool;
     }
     $scope.maxVal = 20;
+    $scope.randomNodeValue = function() {
+      return Math.round(Math.random() * ($scope.maxVal * 2)) - $scope.maxVal;
+    };
 
-    $scope.generateRootNode = function(maxFirst) {
-      $scope.tree.rootNode = Tree.generateABTreeRootNode(
-        $scope.tree.treeType,
-        $scope.tree.depth,
-        $scope.tree.branchingFactor,
-        -$scope.maxVal,
-        $scope.maxVal
+      $scope.generateRootNode = function(maxFirst) {
+        $scope.tree.rootNode = Tree.generateABTreeRootNode(
+          $scope.tree.treeType,
+          $scope.tree.depth,
+          $scope.tree.branchingFactor,
+          -$scope.maxVal,
+          $scope.maxVal
       );
+      if ($scope.tree.rootNode &&
+          $scope.tree.rootNode.nodeType != TreeNodeTypeEnum.leafNode) {
+          $scope.tree.rootNode.value = $scope.randomNodeValue();
+      }
       $scope.actionLQ = null;
     };
     $scope.tree = new Tree(null, TreeNodeTypeEnum.maxNode, 3, 3);
@@ -490,6 +508,10 @@ angular.module('abTreePractice', ['d3', 'Enums', 'Tree'])
 
     $scope.resetTree = function() {
       $scope.tree.reset();
+      if ($scope.tree.rootNode &&
+          $scope.tree.rootNode.nodeType != TreeNodeTypeEnum.leafNode) {
+        $scope.tree.rootNode.value = $scope.randomNodeValue();
+      }
       $scope.reRender();
     }
     $scope.showSolution = function() {
@@ -860,27 +882,6 @@ angular.module('abTreePractice', ['d3', 'Enums', 'Tree'])
                 if (betaText === '') { return 'β: __'; }
                 return 'β: ' + betaText;
               });
-            vertex.select('rect.edit-box')
-              .attr('x', function(node) {
-                var valueWidth = Math.max(16, computeTextWidth(valStr || '_',
-                    '18px Helvetica Neue'));
-                if (selectedField == 'value') {
-                  return node.x - (valueWidth / 2) - 3;
-                }
-                var prefix = getFieldPrefix(selectedField, scope.useAb);
-                var prefixWidth = computeTextWidth(prefix, '18px Helvetica Neue');
-                return node.x + 45 + prefixWidth - 3;
-              })
-              .attr('y', function(node) {
-                if (selectedField == 'alpha') { return node.y - 20; }
-                if (selectedField == 'beta') { return node.y; }
-                return node.y - 16;
-              })
-              .attr('width', function() {
-                return Math.max(16, computeTextWidth(valStr || '_',
-                    '18px Helvetica Neue')) + 6;
-              })
-              .attr('height', 20);
             // update existing cursor
             vertex.select('rect.cursor')
               .attr('x', function(node) {
@@ -909,7 +910,6 @@ angular.module('abTreePractice', ['d3', 'Enums', 'Tree'])
           // node value editing variables and functions
           var valCharIndex = null,
               cursorRect = null,
-              editRect = null,
               valStr = null,
               selectedField = null;
           function getFieldPrefix(field, useAb) {
@@ -961,8 +961,6 @@ angular.module('abTreePractice', ['d3', 'Enums', 'Tree'])
             selectedNode = null;
             cursorRect.remove();
             cursorRect = null;
-            if (editRect) { editRect.remove(); }
-            editRect = null;
           }
           function discardNodeValueChanges() {
             selectedNode.value = selectedNode.oldVal;
@@ -974,8 +972,6 @@ angular.module('abTreePractice', ['d3', 'Enums', 'Tree'])
             selectedNode = null;
             cursorRect.remove();
             cursorRect = null;
-            if (editRect) { editRect.remove(); }
-            editRect = null;
           }
 
           function svgMouseDown() {
@@ -984,7 +980,16 @@ angular.module('abTreePractice', ['d3', 'Enums', 'Tree'])
             }
 
             if (mousedownNode) {
-              if (mousedownNode === selectedNode) { return; }
+              if (mousedownNode === selectedNode) {
+                if (mousedownField !== selectedField) {
+                  commitSelectedField();
+                  selectedField = mousedownField || 'value';
+                  mousedownField = 'value';
+                  loadSelectedField();
+                  scope.reRender();
+                }
+                return;
+              }
               selectedNode = mousedownNode;
               mousedownNode = null;
 
@@ -994,13 +999,6 @@ angular.module('abTreePractice', ['d3', 'Enums', 'Tree'])
               selectedField = mousedownField || 'value';
               mousedownField = 'value';
               loadSelectedField();
-
-              cursorRect = selectedNode.nodeEle
-                .append('svg:rect')
-                .attr('class', 'edit-box')
-                .attr('rx', 2)
-                .attr('opacity', 1);
-              editRect = selectedNode.nodeEle.select('rect.edit-box');
 
               cursorRect = selectedNode.nodeEle
                 .append('svg:rect')
