@@ -168,7 +168,7 @@ g.node.entered.leaf path {
 }
 
 rect.cursor {
-  fill: #00000000;
+  fill: #000;
 }
 
 text {
@@ -182,12 +182,10 @@ text.value {
   font-weight: bold;
 }
 
-g.node text.alpha,
-g.node text.beta {
-  pointer-events: all;
-  cursor: text;
-  fill: #003f7f;
-  text-decoration: underline;
+text.prunemsg {
+  text-anchor: middle;
+  font-size: 11px;
+  fill: #666;
 }
 
 g.node.pruned .alpha,

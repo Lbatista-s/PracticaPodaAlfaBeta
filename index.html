@@ -10,11 +10,11 @@
     <meta property="og:image" content="http://alekskamko.com/static/img/alphabeta.jpg">
     <meta property="og:description" content="D3.js web app for visualizing and understanding the Alpha-Beta Pruning algorithm. Developed for UC Berkeley's CS61B.">
     <meta property="og:type" content="website">
-    <script src="vendor/angular.min.js"></script>
-    <script src="vendor/bootstrap-slider.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.4.4/angular.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-slider/5.0.12/bootstrap-slider.min.js"></script>
     <script src="app.js"></script>
-    <link rel="stylesheet" href="vendor/bootstrap.min.css">
-    <link rel="stylesheet" href="vendor/bootstrap-slider.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.5/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-slider/5.0.12/css/bootstrap-slider.min.css">
     <link rel="stylesheet" href="app.css">
     <script async defer src="https://buttons.github.io/buttons.js"></script>
   </head>
@@ -42,22 +42,22 @@
           <div class="row text-center">
             <div class="btn-group">
               <button ng-disabled="!actionLQ.inAction" ng-click="play()" type="button" class="btn btn-default">
-                &#9658; Play
+                <span class="glyphicon glyphicon-play"></span>
               </button>
               <button ng-disabled="!actionLQ.inAction" ng-click="pause()" type="button" class="btn btn-default">
-                || Pause
+                <span class="glyphicon glyphicon-pause"></span>
               </button>
               <button ng-disabled="!actionLQ.inAction" ng-click="stepBackward()" type="button" class="btn btn-default">
-                &#9664; Step
+                <span class="glyphicon glyphicon-backward"></span>
               </button>
               <button ng-disabled="!actionLQ.inAction" ng-click="stepForward()" type="button" class="btn btn-default">
-                Step &#9654;
+                <span class="glyphicon glyphicon-forward"></span>
               </button>
               <button ng-disabled="!actionLQ.inAction" ng-click="goToBeginning()" type="button" class="btn btn-default">
-                |&#9664;
+                <span class="glyphicon glyphicon-fast-backward"></span>
               </button>
               <button ng-disabled="!actionLQ.inAction" ng-click="goToEnd()" type="button" class="btn btn-default">
-                &#9654;|
+                <span class="glyphicon glyphicon-fast-forward"></span>
               </button>
             </div>
           </div>
@@ -111,6 +111,17 @@
               </div>
             </div>
           </div>
+          <div class="row">
+            <div class="col-sm-6 button-label-container text-right">
+              <label class="button-label">Top Node Value</label>
+            </div>
+            <div class="col-sm-6">
+              <div class="btn-group">
+                <button ng-click="setRootSeedEnabled(false)" type="button" class="btn btn-default {{!includeRootSeed ? 'active' : ''}}">Off</button>
+                <button ng-click="setRootSeedEnabled(true)" type="button" class="btn btn-default {{includeRootSeed ? 'active' : ''}}">On</button>
+              </div>
+            </div>
+          </div>
           <hr/>
           <div class="row">
             <div class="col-sm-6 text-right">
@@ -139,6 +150,9 @@
             </div>
           </div>
         </div>
+        <div class="row text-center">
+          <small>Node editing: V=value, A=alpha, B=beta, I=+∞, Shift+I=-∞</small>
+        </div>
       </div>
     </div>
     <div class="info">
@@ -148,6 +162,7 @@
         data-count-api="/repos/aykamko/abTreePractice#stargazers_count" data-count-aria-label="#
         stargazers on GitHub" aria-label="Star aykamko/abTreePractice on GitHub"
       >Star</a>
+      <span>Modified by <a href="https://github.com/Lbatista-s">LBatista-s</a></span>
       <span>Developed by <a href="http://alekskamko.com">Aleks Kamko</a> for UC Berkeley <a
           href="http://inst.eecs.berkeley.edu/~cs61b/">CS61B</a>
 	  </span>
