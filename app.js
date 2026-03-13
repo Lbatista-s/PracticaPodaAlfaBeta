@@ -951,28 +951,26 @@ angular.module('abTreePractice', ['d3', 'Enums', 'Tree'])
                   nodeVal = node.value;
                 }
                 var valStr = (nodeVal == null) ? '' : nodeVal.toString().replace('Infinity', '∞');
-
-                var valueSelector = 'text.value';
-                if (selectedNode === node && editField == 'alpha') {
-                  valueSelector = 'text.alpha';
-                } else if (selectedNode === node && editField == 'beta') {
-                  valueSelector = 'text.beta';
-                }
-                var valSVG = d3.select(this.parentNode).select(valueSelector).node();
-                var valSVGLength = valSVG ? valSVG.getComputedTextLength() : 0;
-
                 var subStrLength = computeTextWidth(
                     valStr.substring(0, valCharIndex),
                     '18px Helvetica Neue'
                 );
-
-                return node.x + (subStrLength - (valSVGLength / 2));
+                if (selectedNode === node && editField == 'alpha') {
+                  var alphaPrefix = computeTextWidth('α: ', '18px Helvetica Neue');
+                  return (node.x + 45) + alphaPrefix + subStrLength;
+                } else if (selectedNode === node && editField == 'beta') {
+                  var betaPrefix = computeTextWidth('β: ', '18px Helvetica Neue');
+                  return (node.x + 45) + betaPrefix + subStrLength;
+                }
+                var valueText = d3.select(this.parentNode).select('text.value').node();
+                var valueTextLength = valueText ? valueText.getComputedTextLength() : 0;
+                return node.x + (subStrLength - (valueTextLength / 2));
               })
               .attr('y', function(node) {
                 if (selectedNode === node && editField == 'alpha') {
-                  return node.y - 17;
+                  return node.y - 15;
                 } else if (selectedNode === node && editField == 'beta') {
-                  return node.y + 3;
+                  return node.y + 5;
                 }
                 return node.y - 9;
               });
