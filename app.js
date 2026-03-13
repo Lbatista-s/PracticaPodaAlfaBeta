@@ -831,13 +831,25 @@ angular.module('abTreePractice', ['d3', 'Enums', 'Tree'])
             // show node IDs and alpha-beta
             newNodes.append('svg:text')
               .attr('class', 'value');
-            newNodes.append('svg:text')
-              .attr('class', 'prunemsg');
+            newNodes.append('svg:rect')
+              .attr('class', 'fieldbox alpha-box')
+              .on('mousedown', function(d) {
+                if (!scope.tree.mutable || d.nodeType == TreeNodeTypeEnum.leafNode) { return; }
+                queueNodeForEdit(d, 'alpha');
+                scope.reRender();
+              });
             newNodes.append('svg:text')
               .attr('class', 'alpha')
               .on('mousedown', function(d) {
                 if (!scope.tree.mutable || d.nodeType == TreeNodeTypeEnum.leafNode) { return; }
                 queueNodeForEdit(d, 'alpha');
+                scope.reRender();
+              });
+            newNodes.append('svg:rect')
+              .attr('class', 'fieldbox beta-box')
+              .on('mousedown', function(d) {
+                if (!scope.tree.mutable || d.nodeType == TreeNodeTypeEnum.leafNode) { return; }
+                queueNodeForEdit(d, 'beta');
                 scope.reRender();
               });
             newNodes.append('svg:text')
@@ -881,12 +893,27 @@ angular.module('abTreePractice', ['d3', 'Enums', 'Tree'])
               .attr('x', function(d) { return d.x })
               .attr('y', function(d) { return d.y + 6; })
               .text(function(d) { return (d.value != null) ? d.value : ''; });
-            vertex.select('text.prunemsg')
-              .attr('x', function(d) { return d.x })
-              .attr('y', function(d) { return d.y + 32; })
-              .text(function(d) {
-                if (selectedNode !== d) { return ''; }
-                return 'editing ' + editField;
+            vertex.select('rect.alpha-box')
+              .attr('x', function(d) { return d.x + 38; })
+              .attr('y', function(d) { return d.y - 16; })
+              .attr('width', 66)
+              .attr('height', 17)
+              .classed('active-field', function(d) {
+                return selectedNode === d && editField == 'alpha';
+              })
+              .style('display', function(d) {
+                return (d.nodeType == TreeNodeTypeEnum.leafNode) ? 'none' : null;
+              });
+            vertex.select('rect.beta-box')
+              .attr('x', function(d) { return d.x + 38; })
+              .attr('y', function(d) { return d.y + 4; })
+              .attr('width', 66)
+              .attr('height', 17)
+              .classed('active-field', function(d) {
+                return selectedNode === d && editField == 'beta';
+              })
+              .style('display', function(d) {
+                return (d.nodeType == TreeNodeTypeEnum.leafNode || !scope.useAb) ? 'none' : null;
               });
             // update existing alpha-beta values
             vertex.select('text.alpha')
@@ -925,7 +952,13 @@ angular.module('abTreePractice', ['d3', 'Enums', 'Tree'])
                 }
                 var valStr = (nodeVal == null) ? '' : nodeVal.toString().replace('Infinity', '∞');
 
-                var valSVG = d3.select(this.parentNode).select('text').node();
+                var valueSelector = 'text.value';
+                if (selectedNode === node && editField == 'alpha') {
+                  valueSelector = 'text.alpha';
+                } else if (selectedNode === node && editField == 'beta') {
+                  valueSelector = 'text.beta';
+                }
+                var valSVG = d3.select(this.parentNode).select(valueSelector).node();
                 var valSVGLength = valSVG ? valSVG.getComputedTextLength() : 0;
 
                 var subStrLength = computeTextWidth(
@@ -936,6 +969,11 @@ angular.module('abTreePractice', ['d3', 'Enums', 'Tree'])
                 return node.x + (subStrLength - (valSVGLength / 2));
               })
               .attr('y', function(node) {
+                if (selectedNode === node && editField == 'alpha') {
+                  return node.y - 17;
+                } else if (selectedNode === node && editField == 'beta') {
+                  return node.y + 3;
+                }
                 return node.y - 9;
               });
           };
@@ -1011,12 +1049,28 @@ angular.module('abTreePractice', ['d3', 'Enums', 'Tree'])
           }
 
           function svgMouseDown() {
-            if (selectedNode && (mousedownNode !== selectedNode)) {
-              parseAndSetNodeValue();
-            }
-
             if (mousedownNode) {
-              if (mousedownNode === selectedNode) { return; }
+              if (mousedownNode === selectedNode) {
+                if (mousedownField !== editField) {
+                  var parsedCurrent = parseEditableValue(valStr);
+                  setEditFieldValue(selectedNode, parsedCurrent);
+                  if (selectedNode.depth == 1 &&
+                      editField == 'value' &&
+                      selectedNode.fixedValue != null) {
+                    selectedNode.fixedValue = parsedCurrent;
+                  }
+                  editField = mousedownField;
+                  mousedownField = 'value';
+                  nodeValue = getEditFieldValue(selectedNode);
+                  valStr = fieldToString(nodeValue);
+                  valCharIndex = valStr.length;
+                  scope.reRender();
+                }
+                return;
+              }
+              if (selectedNode && (mousedownNode !== selectedNode)) {
+                parseAndSetNodeValue();
+              }
               selectedNode = mousedownNode;
               mousedownNode = null;
               editField = mousedownField;

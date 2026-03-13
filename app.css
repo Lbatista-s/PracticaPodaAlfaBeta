@@ -183,15 +183,23 @@ text.beta {
   cursor: text;
 }
 
+rect.fieldbox {
+  fill: #fff;
+  stroke: #999;
+  stroke-width: 1;
+  rx: 2;
+  pointer-events: all;
+  cursor: text;
+}
+
+rect.fieldbox.active-field {
+  stroke: #1e88e5;
+  stroke-width: 2;
+}
+
 text.value {
   text-anchor: middle;
   font-weight: bold;
-}
-
-text.prunemsg {
-  text-anchor: middle;
-  font-size: 11px;
-  fill: #666;
 }
 
 g.node.pruned .alpha,
