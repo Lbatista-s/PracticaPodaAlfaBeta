@@ -1122,6 +1122,19 @@ angular.module('abTreePractice', ['d3', 'Enums', 'Tree'])
                 valStr = leftSlice + newNum + rightSlice;
                 setEditFieldValue(selectedNode, valStr);
                 incrValCharIndex();
+              } else if (lastKeyDown == 73 || lastKeyDown == 78 || lastKeyDown == 70) { // i, n, f
+                var leftSlice = valStr.slice(0, valCharIndex),
+                    rightSlice = valStr.slice(valCharIndex, valStr.length),
+                    letter = String.fromCharCode(lastKeyDown).toLowerCase();
+                valStr = leftSlice + letter + rightSlice;
+                setEditFieldValue(selectedNode, valStr);
+                incrValCharIndex();
+              } else if (d3.event.key == '∞') { // infinity symbol
+                var leftSlice = valStr.slice(0, valCharIndex),
+                    rightSlice = valStr.slice(valCharIndex, valStr.length);
+                valStr = leftSlice + '∞' + rightSlice;
+                setEditFieldValue(selectedNode, valStr);
+                incrValCharIndex();
               } else if (lastKeyDown == 8) { // backspace
                 d3.event.preventDefault();
                 var leftSlice = valStr.slice(0, Math.max(0, valCharIndex - 1)),
