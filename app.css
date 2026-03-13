@@ -177,6 +177,12 @@ text {
   pointer-events: none;
 }
 
+text.alpha,
+text.beta {
+  pointer-events: all;
+  cursor: text;
+}
+
 text.value {
   text-anchor: middle;
   font-weight: bold;
