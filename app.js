@@ -255,9 +255,7 @@ angular.module('Tree', ['Enums', 'ActionListQueue'])
               setValActions = [];
               if (res.returnVal > curVal) {
                 curVal = res.returnVal;
-                if (!(node.depth == 1 && node.fixedValue != null)) {
-                  setValActions.push(new Action(node, 'value', node.__value, curVal));
-                }
+                setValActions.push(new Action(node, 'value', node.__value, curVal));
                 node.__value = curVal;
               }
               if (res.returnVal > a) {
@@ -295,9 +293,7 @@ angular.module('Tree', ['Enums', 'ActionListQueue'])
               setValActions = [];
               if (res.returnVal < curVal) {
                 curVal = res.returnVal;
-                if (!(node.depth == 1 && node.fixedValue != null)) {
-                  setValActions.push(new Action(node, 'value', node.__value, curVal));
-                }
+                setValActions.push(new Action(node, 'value', node.__value, curVal));
                 node.__value = curVal;
               }
               if (res.returnVal < b) {
@@ -364,10 +360,7 @@ angular.module('Tree', ['Enums', 'ActionListQueue'])
     Tree.prototype.checkAnswer = function(checkAB) {
       function checkSubTree(node) {
         if (node.nodeType == TreeNodeTypeEnum.leafNode) { return true; }
-        var expectedValue = (node.depth == 1 && node.fixedValue != null)
-          ? node.fixedValue
-          : node.__value;
-        if (node.value != expectedValue) {
+        if (node.value != node.__value) {
           return false;
         }
         if (checkAB &&
@@ -411,12 +404,7 @@ angular.module('Tree', ['Enums', 'ActionListQueue'])
           node.edgeToParent.pruned = node.edgeToParent.__pruned;
         }
         if (node.nodeType == TreeNodeTypeEnum.leafNode) { return; }
-        if (node.depth == 1 && node.fixedValue != null) {
-          // Keep the seeded top-node value stable across solution/animation/reset flows.
-          node.value = node.fixedValue;
-        } else {
-          node.value = node.__value;
-        }
+        node.value = node.__value;
         node.alpha = node.__alpha;
         node.beta = node.__beta;
         node.pruned = node.__pruned;
