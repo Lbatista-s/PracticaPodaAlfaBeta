@@ -404,7 +404,12 @@ angular.module('Tree', ['Enums', 'ActionListQueue'])
           node.edgeToParent.pruned = node.edgeToParent.__pruned;
         }
         if (node.nodeType == TreeNodeTypeEnum.leafNode) { return; }
-        node.value = node.__value;
+        if (node.depth == 1 && node.fixedValue != null) {
+          // Keep the seeded top-node value stable across solution/animation/reset flows.
+          node.value = node.fixedValue;
+        } else {
+          node.value = node.__value;
+        }
         node.alpha = node.__alpha;
         node.beta = node.__beta;
         node.pruned = node.__pruned;
@@ -802,6 +807,7 @@ angular.module('abTreePractice', ['d3', 'Enums', 'Tree'])
                 d.oldVal = d.value;
                 d.oldAlpha = d.alpha;
                 d.oldBeta = d.beta;
+                d.oldFixedValue = d.fixedValue;
                 scope.reRender();
               });
             // show node IDs and alpha-beta
@@ -955,13 +961,25 @@ angular.module('abTreePractice', ['d3', 'Enums', 'Tree'])
             if (!selectedNode || selectedNode.nodeType == TreeNodeTypeEnum.leafNode) {
               return;
             }
-            setEditFieldValue(selectedNode, parseEditableValue(valStr));
+            var parsedCurrent = parseEditableValue(valStr);
+            setEditFieldValue(selectedNode, parsedCurrent);
+            if (selectedNode.depth == 1 &&
+                editField == 'value' &&
+                selectedNode.fixedValue != null) {
+              selectedNode.fixedValue = parsedCurrent;
+            }
             editField = field;
             valStr = fieldToString(getEditFieldValue(selectedNode));
             valCharIndex = valStr.length;
           }
           function parseAndSetNodeValue() {
-            setEditFieldValue(selectedNode, parseEditableValue(valStr));
+            var parsed = parseEditableValue(valStr);
+            setEditFieldValue(selectedNode, parsed);
+            if (selectedNode.depth == 1 &&
+                editField == 'value' &&
+                selectedNode.fixedValue != null) {
+              selectedNode.fixedValue = parsed;
+            }
 
             valCharIndex = null;
             valStr = null;
@@ -973,6 +991,7 @@ angular.module('abTreePractice', ['d3', 'Enums', 'Tree'])
             selectedNode.value = selectedNode.oldVal;
             selectedNode.alpha = selectedNode.oldAlpha;
             selectedNode.beta = selectedNode.oldBeta;
+            selectedNode.fixedValue = selectedNode.oldFixedValue;
             valCharIndex = null;
             valStr = null;
             selectedNode = null;
