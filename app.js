@@ -255,7 +255,9 @@ angular.module('Tree', ['Enums', 'ActionListQueue'])
               setValActions = [];
               if (res.returnVal > curVal) {
                 curVal = res.returnVal;
-                setValActions.push(new Action(node, 'value', node.__value, curVal));
+                if (!(node.depth == 1 && node.fixedValue != null)) {
+                  setValActions.push(new Action(node, 'value', node.__value, curVal));
+                }
                 node.__value = curVal;
               }
               if (res.returnVal > a) {
@@ -293,7 +295,9 @@ angular.module('Tree', ['Enums', 'ActionListQueue'])
               setValActions = [];
               if (res.returnVal < curVal) {
                 curVal = res.returnVal;
-                setValActions.push(new Action(node, 'value', node.__value, curVal));
+                if (!(node.depth == 1 && node.fixedValue != null)) {
+                  setValActions.push(new Action(node, 'value', node.__value, curVal));
+                }
                 node.__value = curVal;
               }
               if (res.returnVal < b) {
@@ -360,7 +364,10 @@ angular.module('Tree', ['Enums', 'ActionListQueue'])
     Tree.prototype.checkAnswer = function(checkAB) {
       function checkSubTree(node) {
         if (node.nodeType == TreeNodeTypeEnum.leafNode) { return true; }
-        if (node.value != node.__value) {
+        var expectedValue = (node.depth == 1 && node.fixedValue != null)
+          ? node.fixedValue
+          : node.__value;
+        if (node.value != expectedValue) {
           return false;
         }
         if (checkAB &&
